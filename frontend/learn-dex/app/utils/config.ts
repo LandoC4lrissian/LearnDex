@@ -19,7 +19,7 @@ const educhain: Chain = {
 };
 
 export const config = createConfig({
-  chains: [educhain],
+  chains: [educhain,],
   transports: {
     [educhain.id]: http("https://rpc.open-campus-codex.gelato.digital"),
   },

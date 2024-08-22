@@ -2,3 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  background: linear-gradient(rgb(19, 19, 19) 0%, rgb(19, 19, 19) 100%);
+  font-family: 'Roboto', sans-serif;
+}
