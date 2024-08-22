@@ -4,6 +4,7 @@ import "./globals.css";
 import { Provider } from "./components/provider";
 import "@rainbow-me/rainbowkit/styles.css";
 import Header from "./components/header";
+import { AppProvider } from "./components/AppContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,7 +23,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Provider>
-          <Header /> {children}
+          <AppProvider>
+            <Header /> {children}{" "}
+          </AppProvider>
         </Provider>
       </body>
     </html>

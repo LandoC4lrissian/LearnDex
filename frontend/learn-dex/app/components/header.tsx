@@ -1,13 +1,13 @@
 "use client";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import React, { useState } from "react";
-import Image from "next/image";
+import { useAppContext } from "./AppContext";
 
 const Header = () => {
-  const [activeSection, setActiveSection] = useState("swap");
+  const { activeSection, handleSectionChange } = useAppContext();
 
   const handleButtonClick = (section: string) => {
-    setActiveSection(section);
+    handleSectionChange(section);
   };
 
   return (
@@ -64,8 +64,8 @@ const Header = () => {
             >
               {!mounted || !account || !chain ? (
                 <button
-                className="px-4 py-2 bg-transparent text-gray-500 border border-gray-500 rounded-xl opacity-80 hover:text-blue-500 hover:opacity-80 hover:border-blue-500 hover:border-opacity-80 transition-colors duration-300"
-                onClick={openConnectModal}
+                  className="px-4 py-2 bg-transparent text-gray-500 border border-gray-500 rounded-xl opacity-80 hover:text-blue-500 hover:opacity-80 hover:border-blue-500 hover:border-opacity-80 transition-colors duration-300"
+                  onClick={openConnectModal}
                   type="button"
                 >
                   Connect Wallet

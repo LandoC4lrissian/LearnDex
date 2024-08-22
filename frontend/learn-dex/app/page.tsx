@@ -1,10 +1,29 @@
-import Image from "next/image";
-import React from "react";
+"use client";
+import React, { useState } from "react";
+import { useAppContext } from "./components/AppContext";
+import Swap from "./components/Swap";
+import Pools from "./components/Pools";
+import CreateToken from "./components/CreateToken";
 
 export default function Home() {
-  return (
-    <main className=" min-h-screen">
+  const { activeSection } = useAppContext();
 
+  const renderComponent = () => {
+    switch (activeSection) {
+      case "swap":
+        return <Swap />;
+      case "pools":
+        return <Pools />;
+      case "create-token":
+        return <CreateToken />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <main className="flex min-h-screen">
+      <div className="mt-20">{renderComponent()}</div>
     </main>
   );
 }
