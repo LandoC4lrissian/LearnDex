@@ -66,7 +66,7 @@ export async function addLiquidity(
         deadline,
       ],
     });
-    console.log(addLiquidity);
+    console.log("Add Liquidity " + addLiquidity);
   } catch (error) {
     console.error(error);
   }
@@ -92,6 +92,7 @@ export async function removeLiquidity(
         deadline,
       ],
     });
+    console.log("Remove Liquidity " + removeLiquidity);
   } catch (error) {
     console.error(error);
   }
