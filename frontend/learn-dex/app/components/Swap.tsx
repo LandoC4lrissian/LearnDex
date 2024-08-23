@@ -1,10 +1,20 @@
-import React, { useState } from "react";
+"use client";
+import React, { useState, useEffect } from "react";
+import {
+  getTokenDecimal,
+  swapExactETHForTokens,
+  swapExactTokensForETH,
+} from "../utils/swapFuntions";
 
 const Swap = () => {
   const [selectedToken1, setSelectedToken1] = useState("EDU");
   const [selectedToken2, setSelectedToken2] = useState("");
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [activeTokenInput, setActiveTokenInput] = useState(1);
+  const [decimal, setDecimal] = useState(18);
+  const [amountIn, setAmountIn] = useState("");
+  const [token1Address, setToken1Address] = useState("");
+  const [token2Address, setToken2Address] = useState("");
 
   const handleTokenSelect = (token) => {
     if (activeTokenInput === 1) {
@@ -34,7 +44,9 @@ const Swap = () => {
   return (
     <div className="fixed inset-0 flex justify-center items-center ">
       <div className="bg-neutral-900 w-[500px] h-[440px] rounded-3xl flex flex-col items-center relative">
-        <h1 className="p-4 text-lg text-white opacity-60 absolute top-0 left-4">Swap</h1>
+        <h1 className="p-4 text-lg text-white opacity-60 absolute top-0 left-4">
+          Swap
+        </h1>
         <div className="flex flex-col space-y-2 mt-16">
           <div className="flex flex-row w-[470px] h-32 p-2 bg-neutral-800 rounded-3xl">
             <div className="flex flex-col w-[470px] h-32">
@@ -44,6 +56,8 @@ const Swap = () => {
                   type="number"
                   className="bg-transparent w-[200px] h-12 p-2 text-white text-3xl appearance-none focus:outline-none"
                   placeholder="0"
+                  value={amountIn}
+                  onChange={(e) => setAmountIn(e.target.value)}
                   style={{
                     MozAppearance: "textfield",
                     WebkitAppearance: "none",
@@ -124,7 +138,9 @@ const Swap = () => {
           >
             <div className="bg-neutral-900 w-[500px] h-[550px] rounded-3xl flex flex-col items-center p-4">
               <div className="w-full flex justify-between items-center">
-                <h1 className="text-white opacity-60 text-lg">Select a token</h1>
+                <h1 className="text-white opacity-60 text-lg">
+                  Select a token
+                </h1>
                 <button
                   className="text-white opacity-60 text-xl"
                   onClick={() => setIsPopupVisible(false)}

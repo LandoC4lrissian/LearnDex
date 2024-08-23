@@ -1,15 +1,16 @@
+"use client";
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 
 const Pools = () => {
   const [pools, setPools] = useState([
-    // { id: 1, pair: "TKNA / EDU" },
-    // { id: 2, pair: "TKNA / TKNB" },
-    // { id: 1, pair: "TKNA / EDU" },
-    // { id: 2, pair: "TKNA / TKNB" },
-    // { id: 2, pair: "TKNA / TKNB" },
-    // { id: 2, pair: "TKNA / TKNB" },
-    // { id: 2, pair: "TKNA / TKNB" },
+    { id: 1, pair: "TKNA / EDU" },
+    { id: 2, pair: "TKNA / TKNB" },
+    { id: 1, pair: "TKNA / EDU" },
+    { id: 2, pair: "TKNA / TKNB" },
+    { id: 2, pair: "TKNA / TKNB" },
+    { id: 2, pair: "TKNA / TKNB" },
+    { id: 2, pair: "TKNA / TKNB" },
   ]);
   const [isCreatePoolOpen, setCreatePoolOpen] = useState(false);
   const [isAddLiquidityOpen, setAddLiquidityOpen] = useState(false);
