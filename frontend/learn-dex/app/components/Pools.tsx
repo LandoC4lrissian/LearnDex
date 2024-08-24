@@ -6,7 +6,7 @@ import {
   getPair,
   getAllPairsLength,
   getAllPairs,
-  Approve,
+  Approve
 } from "../utils/Functions";
 import { getTokenInfo } from "../utils/createTokenFunctions";
 import { addLiquidity, removeLiquidity } from "../utils/liquidityFunctions";
@@ -43,6 +43,7 @@ const Pools = () => {
   } | null>(null);
   const token1AddressRef = useRef<string | null>(null);
   const token2AddressRef = useRef<string | null>(null);
+  const [pair, setPair] = useState("");
 
   useEffect(() => {
     loadPools();
@@ -73,8 +74,11 @@ const Pools = () => {
         const token2 = tokenInfo[j];
         const pairAddress = await getPair(
           token1.tokenAddress,
-          token2.tokenAddress
+          token2.tokenAddress,
+          setPair
         );
+        console.log("Pair Address: ", pairAddress);
+        console.log("Pair :" + pair);
         if (
           String(pairAddress) !== "0x0000000000000000000000000000000000000000"
         ) {
@@ -84,7 +88,7 @@ const Pools = () => {
             token2Address: token2.tokenAddress,
           });
         } else {
-          alert("Pair not found");
+          console.log("Pair not found.");
         }
       }
     }
@@ -99,15 +103,13 @@ const Pools = () => {
   const handleCreatePool = async () => {
     try {
       await createPair(token1Address, token2Address);
-      await getPair(token1Address, token2Address);
+      await getPair(token1Address, token2Address, setPair);
 
       await getTokenInfo(setTokenInfo);
-
-      await getTokenSymbols();
-
       await Approve(token1Address);
       await Approve(token2Address);
 
+      await getTokenSymbols();
       setCreatePoolOpen(false);
     } catch (error) {
       console.error("Error creating pool:", error);

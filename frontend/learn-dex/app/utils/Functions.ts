@@ -30,11 +30,12 @@ export async function getPair(
       functionName: "getPair",
       args: [token1Address, token2Address],
     });
-    console.log("Pair: ", pair);
+    console.log("Pair from getPair function: ", pair);
     setPair(pair);
     return pair;
   } catch (error) {
     console.error(error);
+    return "0x0000000000000000000000000000000000000000";
   }
 }
 

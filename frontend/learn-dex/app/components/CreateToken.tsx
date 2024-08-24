@@ -5,6 +5,7 @@ import {
   getTokenInfo,
   getUserTokens,
 } from "../utils/createTokenFunctions";
+import { Approve } from "../utils/Functions";
 import { motion } from "framer-motion";
 
 interface TokenInfo {
@@ -25,6 +26,7 @@ const CreateToken = () => {
   const handleCreateToken = async () => {
     await createToken(tokenName, tokenSymbol);
     await getTokenInfo(setTokenInfo);
+
     await getUserTokens(setUserTokens);
   };
 

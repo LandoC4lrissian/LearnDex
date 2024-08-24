@@ -211,11 +211,11 @@ const Swap = () => {
         {isPopupVisible && (
           <div
             id="popupOverlay"
-            className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50"
+            className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50 "
             onClick={closePopupOnOutsideClick}
           >
-            <div className="bg-neutral-900 w-[500px] h-[550px] rounded-3xl flex flex-col items-center p-4">
-              <div className="w-full flex justify-between items-center">
+            <div className="bg-neutral-900 w-[500px] h-[550px] rounded-3xl flex flex-col items-center p-4 ">
+              <div className="w-full flex justify-between items-center ">
                 <h1 className="text-white opacity-60 text-lg">
                   Select a token
                 </h1>
@@ -231,7 +231,7 @@ const Swap = () => {
                 className="w-full mt-4 p-2 rounded bg-neutral-800 text-white"
                 placeholder="Search name or paste address"
               />
-              <div className="mt-4 w-full flex flex-col space-y-2">
+              <div className="mt-4 w-full flex flex-col space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar">
                 {tokens.map((token, index) => (
                   <button
                     key={index}
