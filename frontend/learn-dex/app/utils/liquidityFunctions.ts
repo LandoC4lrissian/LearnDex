@@ -4,7 +4,6 @@ import { WETHABI } from "./WETHABI.json";
 import { config } from "./config";
 import { parseUnits, formatUnits } from "viem";
 import { getAccount } from "@wagmi/core";
-import { ethers } from "ethers";
 
 const deadline = Number(Math.floor(new Date().getTime() / 1000.0) + "0");
 
@@ -23,21 +22,22 @@ export async function getTokenDecimal(token1Address: string, setDecimal: any) {
 }
 
 export async function getBalance(
-  address: string,
+  tokenAddress: string,
   setBalance: any,
-  decimal: number,
   poolAddress: string
 ) {
+  console.log("Fetching balance for token:", tokenAddress, "in pool:", poolAddress);
+  const decimal = 18;
   try {
     const balance = await readContract(config, {
       abi: WETHABI,
-      address: address,
+      address: tokenAddress,
       functionName: "balanceOf",
       args: [poolAddress],
     });
     setBalance(Number(formatUnits(balance as bigint, decimal)));
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching balance:", error);
   }
 }
 

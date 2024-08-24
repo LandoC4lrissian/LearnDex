@@ -6,7 +6,8 @@ import {
   swapExactTokensForTokens,
 } from "../utils/swapFuntions";
 import { getTokenInfo } from "../utils/createTokenFunctions";
-
+import { getBalance } from "../utils/liquidityFunctions";
+import { getPair } from "../utils/Functions";
 interface TokenInfo {
   tokenAddress: string;
   mintedBy: string;
@@ -15,7 +16,7 @@ interface TokenInfo {
 }
 
 const Swap = () => {
-  const [selectedToken1, setSelectedToken1] = useState("EDU");
+  const [selectedToken1, setSelectedToken1] = useState("");
   const [selectedToken2, setSelectedToken2] = useState("");
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [activeTokenInput, setActiveTokenInput] = useState(1);
@@ -24,10 +25,53 @@ const Swap = () => {
   const [token1Address, setToken1Address] = useState("");
   const [token2Address, setToken2Address] = useState("");
   const [tokens, setTokenInfo] = useState<TokenInfo[]>([]);
+  const [pair, setPair] = useState("");
+  const [token1AmountInPool, setToken1AmountInPool] = useState(0);
+  const [token2AmountInPool, setToken2AmountInPool] = useState(0);
+  const [calculatedAmountOut, setCalculatedAmountOut] = useState(0);
 
   useEffect(() => {
     getTokens();
   }, []);
+
+  useEffect(() => {
+    console.log("token1AmountInPool: ", token1AmountInPool);
+    console.log("token2AmountInPool: ", token2AmountInPool);
+    if (token1AmountInPool > 0 && token2AmountInPool > 0 && amountIn) {
+      const calculatedAmountOut =
+        (Number(amountIn) * token2AmountInPool) / token1AmountInPool;
+      setCalculatedAmountOut(calculatedAmountOut);
+    }
+  }, [amountIn, token1AmountInPool, token2AmountInPool]);
+
+  useEffect(() => {
+    const fetchPairAndBalances = async () => {
+      if (token1Address && token2Address) {
+        console.log("Token1 Address:", token1Address);
+        console.log("Token2 Address:", token2Address);
+
+        const pairAddress = await getPair(token1Address, token2Address, setPair);
+        console.log("Pair Address Directly from getPair:", pairAddress);
+        if (
+          pairAddress !== undefined &&
+          pairAddress !== "0x0000000000000000000000000000000000000000"
+        ) {
+          console.log("Fetching balances for pair:", pairAddress);
+          await getBalance(token1Address, setToken1AmountInPool, pairAddress);
+          await getBalance(token2Address, setToken2AmountInPool, pairAddress);
+        } else {
+          console.log("Pair not found or invalid.");
+        }
+      }
+    };
+
+    fetchPairAndBalances();
+  }, [token1Address, token2Address]);
+
+  useEffect(() => {
+    console.log("Updated Pair State:", pair);
+  }, [pair]);
+  
 
   const getTokens = async () => {
     await getTokenInfo(setTokenInfo);
@@ -38,11 +82,9 @@ const Swap = () => {
     if (activeTokenInput === 1) {
       setSelectedToken1(token);
       setToken1Address(selectedToken?.tokenAddress || "");
-      getTokenDecimal(selectedToken?.tokenAddress ?? "", setDecimal);
     } else {
       setSelectedToken2(token);
       setToken2Address(selectedToken?.tokenAddress || "");
-      getTokenDecimal(selectedToken?.tokenAddress ?? "", setDecimal);
     }
     setIsPopupVisible(false);
   };
@@ -109,7 +151,7 @@ const Swap = () => {
                   className="ml-auto bg-cyan-900 opacity-80 rounded-3xl text-white text-xl px-4 py-2"
                   onClick={() => openTokenSelectPopup(1)}
                 >
-                  {selectedToken1}
+                  {selectedToken1 || "Select Token"}
                 </button>
               </div>
             </div>
@@ -131,7 +173,8 @@ const Swap = () => {
                 <input
                   type="number"
                   className="bg-transparent w-[200px] h-12 p-2 text-white text-3xl appearance-none focus:outline-none"
-                  placeholder="0"
+                  placeholder={calculatedAmountOut.toString()} // Convert calculatedAmountOut to a string
+                  readOnly
                   style={{
                     MozAppearance: "textfield",
                     WebkitAppearance: "none",

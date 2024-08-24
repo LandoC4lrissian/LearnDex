@@ -2,6 +2,7 @@ import { writeContract, readContract } from "@wagmi/core";
 import { config } from "./config";
 import { FactoryABI } from "./factoryABI.json";
 import { WETHABI } from "./WETHABI.json";
+import { getAccount } from "@wagmi/core";
 
 export async function createPair(token1Address: string, token2Address: string) {
   try {
@@ -17,7 +18,11 @@ export async function createPair(token1Address: string, token2Address: string) {
   }
 }
 
-export async function getPair(token1Address: string, token2Address: string) {
+export async function getPair(
+  token1Address: string,
+  token2Address: string,
+  setPair: any
+) {
   try {
     const pair = await readContract(config, {
       abi: FactoryABI,
@@ -26,6 +31,8 @@ export async function getPair(token1Address: string, token2Address: string) {
       args: [token1Address, token2Address],
     });
     console.log("Pair: ", pair);
+    setPair(pair);
+    return pair;
   } catch (error) {
     console.error(error);
   }
@@ -45,9 +52,7 @@ export async function getAllPairsLength() {
 }
 
 // Bu fonksiyon for döngüsü içinde çağırılmalı.
-export async function getAllPairs(
-  index: number,
-) {
+export async function getAllPairs(index: number) {
   try {
     const allPairs = await readContract(config, {
       abi: FactoryABI,
@@ -61,7 +66,7 @@ export async function getAllPairs(
   }
 }
 
-export async function Approve(tokenAddress: string, ) {
+export async function Approve(tokenAddress: string) {
   const uintMax = 200000000000000000;
   const V2RouterAddress = "0x9d67063E8FAC73b17C91Bf891d94105216Cda56e";
 
