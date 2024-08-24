@@ -1,21 +1,100 @@
 "use client";
 import { motion } from "framer-motion";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   createPair,
   getPair,
   getAllPairsLength,
   getAllPairs,
+  Approve,
 } from "../utils/Functions";
+import { getTokenInfo } from "../utils/createTokenFunctions";
+
+interface TokenInfo {
+  tokenAddress: string;
+  mintedBy: string;
+  name: string;
+  symbol: string;
+}
 
 const Pools = () => {
-  const [pools, setPools] = useState([]);
+  const [pools, setPools] = useState<{ pair: string }[]>([]);
   const [isCreatePoolOpen, setCreatePoolOpen] = useState(false);
   const [isAddLiquidityOpen, setAddLiquidityOpen] = useState(false);
   const [isRemoveLiquidityOpen, setRemoveLiquidityOpen] = useState(false);
+  const [token1Address, setToken1Address] = useState("");
+  const [token2Address, setToken2Address] = useState("");
+  const [token1Symbol, setToken1Symbol] = useState("");
+  const [token2Symbol, setToken2Symbol] = useState("");
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo[]>([]);
+
+  useEffect(() => {
+    loadPools();
+  }, []);
+
+  useEffect(() => {
+    if (tokenInfo.length > 0) {
+      findPairs(); 
+    }
+  }, [tokenInfo]);
+
+  const loadPools = async () => {
+    await getTokenInfo(setTokenInfo);
+  };
+
+  const findPairs = async () => {
+    const foundPools = []; 
+    for (let i = 0; i < tokenInfo.length; i++) {
+      for (let j = i + 1; j < tokenInfo.length; j++) {
+        const token1 = tokenInfo[i];
+        const token2 = tokenInfo[j];
+        const pairAddress = await getPair(
+          token1.tokenAddress,
+          token2.tokenAddress
+        );
+        if (
+          String(pairAddress) !== "0x0000000000000000000000000000000000000000"
+        ) {
+          foundPools.push({ pair: `${token1.symbol}/${token2.symbol}` });
+        } else {
+          alert("Pair not found");
+        }
+      }
+    }
+    setPools(foundPools);
+    console.log("Found Pools: ", foundPools);
+  };
 
   const handleCreatePoolClick = () => {
     setCreatePoolOpen(true);
+  };
+
+  const handleCreatePool = async () => {
+    try {
+      await createPair(token1Address, token2Address);
+      await getPair(token1Address, token2Address);
+
+      await getTokenInfo(setTokenInfo);
+
+      await getTokenSymbols();
+
+      await Approve(token1Address);
+      await Approve(token2Address);
+
+      setCreatePoolOpen(false);
+    } catch (error) {
+      console.error("Error creating pool:", error);
+    }
+  };
+
+  const getTokenSymbols = async () => {
+    for (let i = 0; i < tokenInfo.length; i++) {
+      if (tokenInfo[i].tokenAddress === token1Address) {
+        setToken1Symbol(tokenInfo[i].symbol);
+      } else if (tokenInfo[i].tokenAddress === token2Address) {
+        setToken2Symbol(tokenInfo[i].symbol);
+      }
+    }
   };
 
   const handleAddLiquidityClick = () => {
@@ -70,9 +149,9 @@ const Pools = () => {
               <h2 className="text-xl mb-4 text-white">
                 Your positions ({pools.length})
               </h2>
-              {pools.map((pool) => (
+              {pools.map((pool, index) => (
                 <div
-                  key={pool.id}
+                  key={index}
                   className="flex justify-between items-center py-4 border-b border-gray-700"
                 >
                   <div>
@@ -114,8 +193,29 @@ const Pools = () => {
               className="bg-gray-900 p-6 rounded-lg w-96"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Your Create Pool form or content goes here */}
-              <p className="text-white">Create Pool Popup Content</p>
+              <h2 className="text-xl font-bold text-white mb-4">Create Pool</h2>
+              <input
+                type="text"
+                placeholder="Token 1 Address"
+                value={token1Address}
+                onChange={(e) => setToken1Address(e.target.value)}
+                className="w-full p-3 mb-4 rounded bg-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                placeholder="Token 2 Address"
+                value={token2Address}
+                onChange={(e) => setToken2Address(e.target.value)}
+                className="w-full p-3 mb-4 rounded bg-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <motion.button
+                className="bg-cyan-900 opacity-80 text-white py-2 px-4 rounded-xl w-full"
+                onClick={handleCreatePool}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                Create Pool
+              </motion.button>
             </div>
           </div>
         )}

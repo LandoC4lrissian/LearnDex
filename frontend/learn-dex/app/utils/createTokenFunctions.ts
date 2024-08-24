@@ -3,7 +3,7 @@ import { writeContract, readContract } from "@wagmi/core";
 import { config } from "./config";
 import { getAccount } from "@wagmi/core";
 
-const launchPadAddress = "0xe77e466dFB0A7eDbf754B7c9C96710f061a89230";
+const launchPadAddress = "0x94a4255257283d26Fd4098d8bffc74F8595E429F";
 
 export async function createToken(tokenName: string, tokenSymbol: string) {
   try {
