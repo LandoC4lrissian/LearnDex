@@ -7,8 +7,6 @@ import { WETHABI } from "./WETHABI.json";
 import { V2Router02ABI } from "./V2RouterABI.json";
 
 const deadline = Number(Math.floor(new Date().getTime() / 1000.0) + "0");
-const account = getAccount(config);
-const accountAddress = account?.address || "";
 
 export async function getTokenDecimal(token1Address: string, setDecimal: any) {
   try {
@@ -29,10 +27,16 @@ export async function swapExactETHForTokens(
   token1address: string,
   token2address: string
 ) {
+  const account = getAccount(config);
+  if (!account || !account.address) {
+    console.error("Account not found or address is invalid.");
+    return;
+  }
+  const accountAddress = account.address;
   try {
     const swapExactETHForTokens = await writeContract(config, {
       abi: V2Router02ABI,
-      address: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+      address: "0x9d67063E8FAC73b17C91Bf891d94105216Cda56e",
       functionName: "swapExactETHForTokens",
       value: parseEther(amountIn),
       args: [[0], [token1address, token2address], accountAddress, deadline],
@@ -43,18 +47,23 @@ export async function swapExactETHForTokens(
   }
 }
 
-export async function swapExactTokensForETH(
+export async function swapExactTokensForTokens(
   token1Address: string,
   token2Address: string,
-  amountIn: string,
-  decimal: number
+  amountIn: string
 ) {
-  const amountInParsed = BigInt((Number(amountIn) * 10 ** decimal).toString());
+  const amountInParsed = BigInt((Number(amountIn) * 10 ** 18).toString());
+  const account = getAccount(config);
+  if (!account || !account.address) {
+    console.error("Account not found or address is invalid.");
+    return;
+  }
+  const accountAddress = account.address;
   try {
-    const swapExactTokensForETH = await writeContract(config, {
+    const swapExactTokensForToken = await writeContract(config, {
       abi: V2Router02ABI,
-      address: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-      functionName: "swapExactTokensForETH",
+      address: "0x9d67063E8FAC73b17C91Bf891d94105216Cda56e",
+      functionName: "swapExactTokensForTokens",
       args: [
         amountInParsed,
         0,
@@ -63,7 +72,7 @@ export async function swapExactTokensForETH(
         deadline,
       ],
     });
-    console.log("Swap Exact Tokens For ETH: ", swapExactTokensForETH);
+    console.log("Swap Exact Tokens For Token: ", swapExactTokensForToken);
   } catch (error) {
     console.error(error);
   }

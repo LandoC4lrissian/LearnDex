@@ -3,10 +3,16 @@ import React, { useState, useEffect } from "react";
 import {
   getTokenDecimal,
   swapExactETHForTokens,
-  swapExactTokensForETH,
+  swapExactTokensForTokens,
 } from "../utils/swapFuntions";
+import { getTokenInfo } from "../utils/createTokenFunctions";
 
-const WETHAddress = "0xA98aAb9B5C709B61686c862bfEca57558C9Cec29";
+interface TokenInfo {
+  tokenAddress: string;
+  mintedBy: string;
+  name: string;
+  symbol: string;
+}
 
 const Swap = () => {
   const [selectedToken1, setSelectedToken1] = useState("EDU");
@@ -17,12 +23,26 @@ const Swap = () => {
   const [amountIn, setAmountIn] = useState("");
   const [token1Address, setToken1Address] = useState("");
   const [token2Address, setToken2Address] = useState("");
+  const [tokens, setTokenInfo] = useState<TokenInfo[]>([]);
+
+  useEffect(() => {
+    getTokens();
+  }, []);
+
+  const getTokens = async () => {
+    await getTokenInfo(setTokenInfo);
+  };
 
   const handleTokenSelect = (token) => {
+    const selectedToken = tokens.find((t) => t.symbol === token);
     if (activeTokenInput === 1) {
       setSelectedToken1(token);
+      setToken1Address(selectedToken?.tokenAddress || "");
+      getTokenDecimal(selectedToken?.tokenAddress ?? "", setDecimal);
     } else {
       setSelectedToken2(token);
+      setToken2Address(selectedToken?.tokenAddress || "");
+      getTokenDecimal(selectedToken?.tokenAddress ?? "", setDecimal);
     }
     setIsPopupVisible(false);
   };
@@ -41,6 +61,16 @@ const Swap = () => {
   const swapTokens = () => {
     setSelectedToken1(selectedToken2);
     setSelectedToken2(selectedToken1);
+    setToken1Address(token2Address);
+    setToken2Address(token1Address);
+  };
+
+  const handleSwap = () => {
+    if (selectedToken1 === "ETH") {
+      swapExactETHForTokens(amountIn, token1Address, token2Address);
+    } else {
+      swapExactTokensForTokens(token1Address, token2Address, amountIn);
+    }
   };
 
   return (
@@ -127,7 +157,10 @@ const Swap = () => {
             </div>
           </div>
         </div>
-        <button className="w-[470px] h-12 bg-cyan-900 opacity-80 rounded-3xl text-white text-lg mt-2">
+        <button
+          className="w-[470px] h-12 bg-cyan-900 opacity-80 rounded-3xl text-white text-lg mt-2"
+          onClick={handleSwap}
+        >
           Swap
         </button>
 
@@ -156,28 +189,16 @@ const Swap = () => {
                 placeholder="Search name or paste address"
               />
               <div className="mt-4 w-full flex flex-col space-y-2">
-                {["EDU", "Wrapped EDU", "Token A", "Token B", "USDC"].map(
-                  (token, index) => (
-                    <button
-                      key={index}
-                      className="w-full p-4 bg-neutral-800 rounded-3xl text-white flex justify-between items-center"
-                      onClick={() => handleTokenSelect(token)}
-                    >
-                      <span>{token}</span>
-                      <span className="opacity-60 text-sm">
-                        {token === "EDU"
-                          ? "EDU"
-                          : token === "Wrapped EDU"
-                          ? "WEDU"
-                          : token === "Token A"
-                          ? "TKNA"
-                          : token === "Token B"
-                          ? "TKNB"
-                          : "USDC"}
-                      </span>
-                    </button>
-                  )
-                )}
+                {tokens.map((token, index) => (
+                  <button
+                    key={index}
+                    className="w-full p-4 bg-neutral-800 rounded-3xl text-white flex justify-between items-center"
+                    onClick={() => handleTokenSelect(token.symbol)}
+                  >
+                    <span>{token.name}</span>
+                    <span className="opacity-60 text-sm">{token.symbol}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
