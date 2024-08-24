@@ -41,6 +41,16 @@ const Header = () => {
         >
           Create Token
         </button>
+        <button
+          onClick={() => handleButtonClick("documentation")}
+          className={`${
+            activeSection === "documentation"
+              ? "text-white"
+              : "text-gray-500 opacity-80"
+          } bg-transparent border-none px-4 py-2 rounded-md transition-all duration-300 text-lg`}
+        >
+          Documentation
+        </button>
       </div>
       <div className="pr-5 pt-2">
         <ConnectButton.Custom>

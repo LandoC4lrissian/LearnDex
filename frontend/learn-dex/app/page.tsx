@@ -4,6 +4,7 @@ import { useAppContext } from "./components/AppContext";
 import Swap from "./components/Swap";
 import Pools from "./components/Pools";
 import CreateToken from "./components/CreateToken";
+import Documentation from "./components/Documentation";
 
 export default function Home() {
   const { activeSection } = useAppContext();
@@ -16,6 +17,8 @@ export default function Home() {
         return <Pools />;
       case "create-token":
         return <CreateToken />;
+      case "documentation":
+        return <Documentation />;
       default:
         return null;
     }
