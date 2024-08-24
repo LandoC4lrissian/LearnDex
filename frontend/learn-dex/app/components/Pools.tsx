@@ -9,6 +9,9 @@ import {
   Approve,
 } from "../utils/Functions";
 import { getTokenInfo } from "../utils/createTokenFunctions";
+import { addLiquidity, removeLiquidity } from "../utils/liquidityFunctions";
+import { useRef } from "react";
+import { ethers } from "ethers";
 
 interface TokenInfo {
   tokenAddress: string;
@@ -18,7 +21,9 @@ interface TokenInfo {
 }
 
 const Pools = () => {
-  const [pools, setPools] = useState<{ pair: string }[]>([]);
+  const [pools, setPools] = useState<
+    { pair: string; token1Address: string; token2Address: string }[]
+  >([]);
   const [isCreatePoolOpen, setCreatePoolOpen] = useState(false);
   const [isAddLiquidityOpen, setAddLiquidityOpen] = useState(false);
   const [isRemoveLiquidityOpen, setRemoveLiquidityOpen] = useState(false);
@@ -27,6 +32,17 @@ const Pools = () => {
   const [token1Symbol, setToken1Symbol] = useState("");
   const [token2Symbol, setToken2Symbol] = useState("");
   const [tokenInfo, setTokenInfo] = useState<TokenInfo[]>([]);
+  const [amountToken1, setAmountToken1] = useState("");
+  const [amountToken2, setAmountToken2] = useState("");
+  const [token1Decimals, setToken1Decimals] = useState(18);
+  const [token2Decimals, setToken2Decimals] = useState(18);
+  const [removeLiquidityAmount, setRemoveLiquidityAmount] = useState("");
+  const [selectedPool, setSelectedPool] = useState<{
+    token1Address: string;
+    token2Address: string;
+  } | null>(null);
+  const token1AddressRef = useRef<string | null>(null);
+  const token2AddressRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadPools();
@@ -34,16 +50,23 @@ const Pools = () => {
 
   useEffect(() => {
     if (tokenInfo.length > 0) {
-      findPairs(); 
+      findPairs();
     }
   }, [tokenInfo]);
+
+  useEffect(() => {
+    if (token1Address && token2Address) {
+      console.log("Address1: ", token1Address);
+      console.log("Address2: ", token2Address);
+    }
+  }, [token1Address, token2Address]);
 
   const loadPools = async () => {
     await getTokenInfo(setTokenInfo);
   };
 
   const findPairs = async () => {
-    const foundPools = []; 
+    const foundPools = [];
     for (let i = 0; i < tokenInfo.length; i++) {
       for (let j = i + 1; j < tokenInfo.length; j++) {
         const token1 = tokenInfo[i];
@@ -55,7 +78,11 @@ const Pools = () => {
         if (
           String(pairAddress) !== "0x0000000000000000000000000000000000000000"
         ) {
-          foundPools.push({ pair: `${token1.symbol}/${token2.symbol}` });
+          foundPools.push({
+            pair: `${token1.symbol}/${token2.symbol}`,
+            token1Address: token1.tokenAddress,
+            token2Address: token2.tokenAddress,
+          });
         } else {
           alert("Pair not found");
         }
@@ -97,12 +124,71 @@ const Pools = () => {
     }
   };
 
-  const handleAddLiquidityClick = () => {
+  const handleAddLiquidityClick = (pool: {
+    token1Address: string;
+    token2Address: string;
+  }) => {
+    token1AddressRef.current = pool.token1Address;
+    token2AddressRef.current = pool.token2Address;
+    console.log("Ref Address1: ", token1AddressRef.current);
+    console.log("Ref Address2: ", token2AddressRef.current);
     setAddLiquidityOpen(true);
   };
 
-  const handleRemoveLiquidityClick = () => {
+  const handleAddLiquidity = async () => {
+    try {
+      if (!token1AddressRef.current || !token2AddressRef.current) {
+        console.error("Token addresses are not set.");
+        return;
+      }
+
+      // Adreslerin geçerli olup olmadığını kontrol edin.
+      if (
+        !ethers.utils.isAddress(token1AddressRef.current) ||
+        !ethers.utils.isAddress(token2AddressRef.current)
+      ) {
+        console.error("One or both token addresses are invalid.");
+        return;
+      }
+
+      console.log("Adding Liquidity...");
+      console.log("Token1 Address:", token1AddressRef.current);
+      console.log("Token2 Address:", token2AddressRef.current);
+
+      await addLiquidity(
+        token1AddressRef.current,
+        token2AddressRef.current,
+        amountToken1,
+        amountToken2,
+        18,
+        18
+      );
+      setAddLiquidityOpen(false);
+    } catch (error) {
+      console.error("Error adding liquidity:", error);
+    }
+  };
+
+  const handleRemoveLiquidityClick = (pool: {
+    token1Address: string;
+    token2Address: string;
+  }) => {
+    setToken1Address(pool.token1Address);
+    setToken2Address(pool.token2Address);
     setRemoveLiquidityOpen(true);
+  };
+
+  const handleRemoveLiquidity = async () => {
+    try {
+      await removeLiquidity(
+        token1Address,
+        token2Address,
+        Number(removeLiquidityAmount)
+      );
+      setRemoveLiquidityOpen(false);
+    } catch (error) {
+      console.error("Error removing liquidity:", error);
+    }
   };
 
   const handleClosePopup = () => {
@@ -162,7 +248,7 @@ const Pools = () => {
                   <div className="flex items-center">
                     <motion.button
                       className="bg-cyan-900 opacity-80 text-white py-1 px-3 rounded-xl ml-4"
-                      onClick={handleAddLiquidityClick}
+                      onClick={() => handleAddLiquidityClick(pool)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
@@ -170,7 +256,7 @@ const Pools = () => {
                     </motion.button>
                     <motion.button
                       className="bg-cyan-900 opacity-80 text-white py-1 px-3 rounded-xl ml-4"
-                      onClick={handleRemoveLiquidityClick}
+                      onClick={() => handleRemoveLiquidityClick(pool)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
@@ -230,8 +316,31 @@ const Pools = () => {
               className="bg-gray-900 p-6 rounded-lg w-96"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Your Add Liquidity form or content goes here */}
-              <p className="text-white">Add Liquidity Popup Content</p>
+              <h2 className="text-xl font-bold text-white mb-4">
+                Add Liquidity
+              </h2>
+              <input
+                type="text"
+                placeholder="Token 1 Amount"
+                value={amountToken1}
+                onChange={(e) => setAmountToken1(e.target.value)}
+                className="w-full p-3 mb-4 rounded bg-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="text"
+                placeholder="Token 2 Amount"
+                value={amountToken2}
+                onChange={(e) => setAmountToken2(e.target.value)}
+                className="w-full p-3 mb-4 rounded bg-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <motion.button
+                className="bg-cyan-900 opacity-80 text-white py-2 px-4 rounded-xl w-full"
+                onClick={handleAddLiquidity}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                Add Liquidity
+              </motion.button>
             </div>
           </div>
         )}
@@ -244,8 +353,24 @@ const Pools = () => {
               className="bg-gray-900 p-6 rounded-lg w-96"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Your Add Liquidity form or content goes here */}
-              <p className="text-white">Remove Liquidity Popup Content</p>
+              <h2 className="text-xl font-bold text-white mb-4">
+                Remove Liquidity
+              </h2>
+              <input
+                type="text"
+                placeholder="Amount to Remove"
+                value={removeLiquidityAmount}
+                onChange={(e) => setRemoveLiquidityAmount(e.target.value)}
+                className="w-full p-3 mb-4 rounded bg-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <motion.button
+                className="bg-cyan-900 opacity-80 text-white py-2 px-4 rounded-xl w-full"
+                onClick={handleRemoveLiquidity}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                Remove Liquidity
+              </motion.button>
             </div>
           </div>
         )}

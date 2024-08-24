@@ -12,6 +12,7 @@
     "@rainbow-me/rainbowkit": "^2.1.5",
     "@tanstack/react-query": "^5.52.0",
     "clsx": "^2.1.1",
+    "ethers": "5.7.0",
     "framer-motion": "^11.3.29",
     "lodash.merge": "^4.6.2",
     "next": "14.2.6",

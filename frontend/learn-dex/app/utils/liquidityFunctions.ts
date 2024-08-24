@@ -4,10 +4,9 @@ import { WETHABI } from "./WETHABI.json";
 import { config } from "./config";
 import { parseUnits, formatUnits } from "viem";
 import { getAccount } from "@wagmi/core";
+import { ethers } from "ethers";
 
 const deadline = Number(Math.floor(new Date().getTime() / 1000.0) + "0");
-const account = getAccount(config);
-const accountAddress = account?.address || "";
 
 export async function getTokenDecimal(token1Address: string, setDecimal: any) {
   try {
@@ -50,10 +49,24 @@ export async function addLiquidity(
   token1Decimals: number,
   token2Decimals: number
 ) {
+  const account = getAccount(config);
+  if (!account || !account.address) {
+    console.error("Account not found or address is invalid.");
+    return;
+  }
+  const accountAddress = account.address;
+  console.log("Token1 Address: ", token1Address);
+  console.log("Token2 Address: ", token2Address);
+  const parsedAmount1 = parseUnits(amountToken1, token1Decimals);
+  const parsedAmount2 = parseUnits(amountToken2, token2Decimals);
+  console.log("Parsed Amount 1:", parsedAmount1.toString());
+  console.log("Parsed Amount 2:", parsedAmount2.toString());
+  console.log("accountAddress: " + accountAddress);
+  const address = "0x9d67063E8FAC73b17C91Bf891d94105216Cda56e";
   try {
     const addLiquidity = await writeContract(config, {
       abi: V2Router02ABI,
-      address: "0x63656d7917FcBaAd1A4A75a048da32778C695eD3",
+      address: address,
       functionName: "addLiquidity",
       args: [
         token1Address,
@@ -68,7 +81,7 @@ export async function addLiquidity(
     });
     console.log("Add Liquidity " + addLiquidity);
   } catch (error) {
-    console.error(error);
+    console.error("Error adding liquidity:", (error as Error).message || error);
   }
 }
 
@@ -77,10 +90,16 @@ export async function removeLiquidity(
   token2Address: string,
   amountRemoveLiquidity: number
 ) {
+  const account = getAccount(config);
+  if (!account || !account.address) {
+    console.error("Account not found or address is invalid.");
+    return;
+  }
+  const accountAddress = account.address;
   try {
     const removeLiquidity = await writeContract(config, {
       abi: V2Router02ABI,
-      address: "0x63656d7917FcBaAd1A4A75a048da32778C695eD3",
+      address: "0x9d67063E8FAC73b17C91Bf891d94105216Cda56e",
       functionName: "removeLiquidity",
       args: [
         token1Address,
