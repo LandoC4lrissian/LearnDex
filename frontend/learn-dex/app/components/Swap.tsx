@@ -6,6 +6,8 @@ import {
   swapExactTokensForETH,
 } from "../utils/swapFuntions";
 
+const WETHAddress = "0xA98aAb9B5C709B61686c862bfEca57558C9Cec29";
+
 const Swap = () => {
   const [selectedToken1, setSelectedToken1] = useState("EDU");
   const [selectedToken2, setSelectedToken2] = useState("");

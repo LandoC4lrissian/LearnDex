@@ -1,17 +1,15 @@
 "use client";
 import { motion } from "framer-motion";
 import React, { useState } from "react";
+import {
+  createPair,
+  getPair,
+  getAllPairsLength,
+  getAllPairs,
+} from "../utils/Functions";
 
 const Pools = () => {
-  const [pools, setPools] = useState([
-    { id: 1, pair: "TKNA / EDU" },
-    { id: 2, pair: "TKNA / TKNB" },
-    { id: 1, pair: "TKNA / EDU" },
-    { id: 2, pair: "TKNA / TKNB" },
-    { id: 2, pair: "TKNA / TKNB" },
-    { id: 2, pair: "TKNA / TKNB" },
-    { id: 2, pair: "TKNA / TKNB" },
-  ]);
+  const [pools, setPools] = useState([]);
   const [isCreatePoolOpen, setCreatePoolOpen] = useState(false);
   const [isAddLiquidityOpen, setAddLiquidityOpen] = useState(false);
   const [isRemoveLiquidityOpen, setRemoveLiquidityOpen] = useState(false);
@@ -26,7 +24,7 @@ const Pools = () => {
 
   const handleRemoveLiquidityClick = () => {
     setRemoveLiquidityOpen(true);
-  }
+  };
 
   const handleClosePopup = () => {
     setCreatePoolOpen(false);

@@ -3,8 +3,9 @@ import { writeContract, readContract } from "@wagmi/core";
 import { config } from "./config";
 import { getAccount } from "@wagmi/core";
 
+const launchPadAddress = "0xe77e466dFB0A7eDbf754B7c9C96710f061a89230";
+
 export async function createToken(tokenName: string, tokenSymbol: string) {
-  const launchPadAddress = "0xfABEb71c5590d6296BA7C3294622BFB6902f8590";
   try {
     const deployedToken = await writeContract(config, {
       abi: LaunchPadABI,
@@ -18,47 +19,48 @@ export async function createToken(tokenName: string, tokenSymbol: string) {
   }
 }
 
-// tüm tokenların bilgilerini dönüyor
-export async function getTokenInfo() {
+// Tüm tokenların bilgilerini dönüyor
+export async function getTokenInfo(setTokenInfo: (tokenInfo: TokenInfo[]) => void) {
   try {
-    const tokenInfo = await readContract(config, {
+    const [tokenAddresses, mintedBys, names, symbols] = await readContract(config, {
       abi: LaunchPadABI,
-      address: "0xfABEb71c5590d6296BA7C3294622BFB6902f8590",
+      address: launchPadAddress,
       functionName: "getTokenInfo",
     });
-    console.log("Token Info " + tokenInfo);
+    
+    const tokens: TokenInfo[] = names.map((name: string, index: number) => ({
+      tokenAddress: tokenAddresses[index],
+      mintedBy: mintedBys[index],
+      name,
+      symbol: symbols[index],
+    }));
+
+    setTokenInfo(tokens);
+    console.log("Token Info fonksiyonun içindeki ", tokens);
   } catch (error) {
     console.log(error);
   }
 }
 
-// token adreslerini dönüyor
-export async function getUserTokens() {
+// Kullanıcının token adreslerini ve isimlerini/simbol bilgilerini dönüyor
+export async function getUserTokens(setUserTokens: (userTokens: { name: string, symbol: string }[]) => void) {
   const account = getAccount(config);
   try {
-    const userTokens = await readContract(config, {
+    const [names, symbols] = await readContract(config, {
       abi: LaunchPadABI,
-      address: "0xfABEb71c5590d6296BA7C3294622BFB6902f8590",
+      address: launchPadAddress,
       functionName: "getUserTokens",
       args: [account.address],
     });
-    console.log("User Tokens " + userTokens);
+
+    const userTokens = names.map((name: string, index: number) => ({
+      name,
+      symbol: symbols[index],
+    }));
+
+    setUserTokens(userTokens);
+    console.log("User Tokens ", userTokens);
   } catch (error) {
     console.log(error);
   }
-}
-
-// basılan tokenların indexine göre bilgilerini dönüyor
-export async function tokens(index: number) {
-    try {
-        const tokenInfo = await readContract(config, {
-            abi: LaunchPadABI,
-            address: "0xfABEb71c5590d6296BA7C3294622BFB6902f8590",
-            functionName: "tokens",
-            args: [index],
-        });
-        console.log("Token Info(tokens) " + tokenInfo);
-    } catch (error) {
-        console.log(error);
-    }
 }

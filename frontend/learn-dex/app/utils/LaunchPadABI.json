@@ -1,6 +1,24 @@
 {
   "LaunchPadABI": [
     {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
+        }
+      ],
+      "name": "deployToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "anonymous": false,
       "inputs": [
         {
@@ -32,53 +50,28 @@
       "type": "event"
     },
     {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "symbol",
-          "type": "string"
-        }
-      ],
-      "name": "deployToken",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [],
       "name": "getTokenInfo",
       "outputs": [
         {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "tokenAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "mintedBy",
-              "type": "address"
-            },
-            {
-              "internalType": "string",
-              "name": "name",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "symbol",
-              "type": "string"
-            }
-          ],
-          "internalType": "struct Launchpad.TokenInfo[]",
-          "name": "",
-          "type": "tuple[]"
+          "internalType": "address[]",
+          "name": "tokenAddresses",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "mintedBys",
+          "type": "address[]"
+        },
+        {
+          "internalType": "string[]",
+          "name": "names",
+          "type": "string[]"
+        },
+        {
+          "internalType": "string[]",
+          "name": "symbols",
+          "type": "string[]"
         }
       ],
       "stateMutability": "view",
@@ -95,9 +88,14 @@
       "name": "getUserTokens",
       "outputs": [
         {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
+          "internalType": "string[]",
+          "name": "names",
+          "type": "string[]"
+        },
+        {
+          "internalType": "string[]",
+          "name": "symbols",
+          "type": "string[]"
         }
       ],
       "stateMutability": "view",
@@ -154,8 +152,23 @@
       "outputs": [
         {
           "internalType": "address",
-          "name": "",
+          "name": "tokenAddress",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "mintedBy",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
         }
       ],
       "stateMutability": "view",
