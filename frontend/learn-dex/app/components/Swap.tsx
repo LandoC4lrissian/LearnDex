@@ -306,7 +306,7 @@ const Swap = () => {
                   under &quot;You Pay&quot;.
                 </li>
                 <li>
-                  Don&apos;t that the 2 tokens you want to swap must be in the same pair.
+                  Don&apos;t forget that the 2 tokens you want to swap must be in the same pair.
                 </li>
                 <li>Enter the amount you wish to swap.</li>
                 <li>
