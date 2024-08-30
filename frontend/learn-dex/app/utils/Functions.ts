@@ -68,7 +68,7 @@ export async function getAllPairs(index: number) {
 }
 
 export async function Approve(tokenAddress: string) {
-  const uintMax = 200000000000000000;
+  const uintMax = 10000000000000000000000;
   const V2RouterAddress = "0x9d67063E8FAC73b17C91Bf891d94105216Cda56e";
 
   async function isValidAddress(tokenAddress: string) {

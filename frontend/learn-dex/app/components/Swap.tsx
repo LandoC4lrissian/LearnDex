@@ -8,6 +8,9 @@ import {
 import { getTokenInfo } from "../utils/createTokenFunctions";
 import { getBalance } from "../utils/liquidityFunctions";
 import { getPair } from "../utils/Functions";
+import { getAccount } from "@wagmi/core";
+import { config } from "../utils/config";
+("");
 interface TokenInfo {
   tokenAddress: string;
   mintedBy: string;
@@ -29,6 +32,9 @@ const Swap = () => {
   const [token1AmountInPool, setToken1AmountInPool] = useState(0);
   const [token2AmountInPool, setToken2AmountInPool] = useState(0);
   const [calculatedAmountOut, setCalculatedAmountOut] = useState(0);
+  const [balance, setBalance] = useState(0);
+  const account = getAccount(config);
+  const [isHelpPopupVisible, setIsHelpPopupVisible] = useState(false);
 
   useEffect(() => {
     getTokens();
@@ -50,7 +56,11 @@ const Swap = () => {
         console.log("Token1 Address:", token1Address);
         console.log("Token2 Address:", token2Address);
 
-        const pairAddress = await getPair(token1Address, token2Address, setPair);
+        const pairAddress = await getPair(
+          token1Address,
+          token2Address,
+          setPair
+        );
         console.log("Pair Address Directly from getPair:", pairAddress);
         if (
           pairAddress !== undefined &&
@@ -71,7 +81,12 @@ const Swap = () => {
   useEffect(() => {
     console.log("Updated Pair State:", pair);
   }, [pair]);
-  
+
+  useEffect(() => {
+    if (token1Address && token2Address) {
+      getBalance(token1Address, setBalance, String(account.address));
+    }
+  }, [token1Address, token2Address, account.address]);
 
   const getTokens = async () => {
     await getTokenInfo(setTokenInfo);
@@ -82,9 +97,25 @@ const Swap = () => {
     if (activeTokenInput === 1) {
       setSelectedToken1(token);
       setToken1Address(selectedToken?.tokenAddress || "");
+      // Update balance when token is selected
+      if (selectedToken?.tokenAddress) {
+        getBalance(
+          selectedToken.tokenAddress,
+          setBalance,
+          String(account.address)
+        );
+      }
     } else {
       setSelectedToken2(token);
       setToken2Address(selectedToken?.tokenAddress || "");
+      // Update balance when token is selected
+      if (selectedToken?.tokenAddress) {
+        getBalance(
+          selectedToken.tokenAddress,
+          setBalance,
+          String(account.address)
+        );
+      }
     }
     setIsPopupVisible(false);
   };
@@ -117,7 +148,15 @@ const Swap = () => {
 
   return (
     <div className="fixed inset-0 flex justify-center items-center ">
-      <div className="bg-neutral-900 w-[500px] h-[440px] rounded-3xl flex flex-col items-center relative">
+      <div className="bg-neutral-900 w-[500px] h-[440px] rounded-3xl flex flex-col items-center relative shadow-lg shadow-cyan-400">
+        <div className="absolute top-0 right-4 mt-4">
+          <button
+            onClick={() => setIsHelpPopupVisible(true)}
+            className="text-white opacity-60 text-lg"
+          >
+            ?
+          </button>
+        </div>
         <h1 className="p-4 text-lg text-white opacity-60 absolute top-0 left-4">
           Swap
         </h1>
@@ -148,12 +187,18 @@ const Swap = () => {
                   }
                 `}</style>
                 <button
-                  className="ml-auto bg-cyan-900 opacity-80 rounded-3xl text-white text-xl px-4 py-2"
+                  className="ml-auto bg-blue-800 hover:bg-blue-950 transition opacity-80 rounded-3xl text-white text-xl px-4 py-2"
                   onClick={() => openTokenSelectPopup(1)}
                 >
                   {selectedToken1 || "Select Token"}
                 </button>
               </div>
+              {/* Display balance for selected token */}
+              {selectedToken1 && (
+                <div className="text-white opacity-60 text-xs p-2">
+                  Balance: {balance}
+                </div>
+              )}
             </div>
           </div>
 
@@ -191,7 +236,7 @@ const Swap = () => {
                   }
                 `}</style>
                 <button
-                  className="ml-auto bg-cyan-900 opacity-80 rounded-3xl text-white text-xl px-4 py-2"
+                  className="ml-auto bg-blue-800 hover:bg-blue-950 transition0 opacity-80 rounded-3xl text-white text-xl px-4 py-2"
                   onClick={() => openTokenSelectPopup(2)}
                 >
                   {selectedToken2 || "Select Token"}
@@ -201,7 +246,7 @@ const Swap = () => {
           </div>
         </div>
         <button
-          className="w-[470px] h-12 bg-cyan-900 opacity-80 rounded-3xl text-white text-lg mt-2"
+          className="w-[470px] h-12 bg-blue-800 hover:bg-blue-950 transition opacity-80 rounded-3xl text-white text-lg mt-2"
           onClick={handleSwap}
         >
           Swap
@@ -235,7 +280,7 @@ const Swap = () => {
                 {tokens.map((token, index) => (
                   <button
                     key={index}
-                    className="w-full p-4 bg-neutral-800 rounded-3xl text-white flex justify-between items-center"
+                    className="w-full p-4 bg-neutral-800 hover:bg-blue-800 transition rounded-3xl text-white flex justify-between items-center"
                     onClick={() => handleTokenSelect(token.symbol)}
                   >
                     <span>{token.name}</span>
@@ -243,6 +288,33 @@ const Swap = () => {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+        {/* Help Popup */}
+        {isHelpPopupVisible && (
+          <div
+            className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50 "
+            id="popupOverlay"
+            onClick={() => setIsHelpPopupVisible(false)}
+          >
+            <div className=" bg-blue-800 text-white p-4 rounded-lg z-50">
+              <p className="text-xl">To perform a swap:</p>
+              <ul className="list-disc ml-4 text-xl">
+                <li>
+                  Select the token you want to swap by clicking &quot;Select Token&quot;
+                  under &quot;You Pay&quot;.
+                </li>
+                <li>
+                  Don&apos;t that the 2 tokens you want to swap must be in the same pair.
+                </li>
+                <li>Enter the amount you wish to swap.</li>
+                <li>
+                  Click the down arrow to switch between the tokens if
+                  necessary.
+                </li>
+                <li>Click &quot;Swap&quot; to execute the transaction.</li>
+              </ul>
             </div>
           </div>
         )}

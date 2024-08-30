@@ -6,18 +6,32 @@ import {
   getPair,
   getAllPairsLength,
   getAllPairs,
-  Approve
+  Approve,
 } from "../utils/Functions";
 import { getTokenInfo } from "../utils/createTokenFunctions";
 import { addLiquidity, removeLiquidity } from "../utils/liquidityFunctions";
 import { useRef } from "react";
 import { ethers } from "ethers";
+import { keccak256, toBytes } from "viem";
+import { decodeEventLog } from "viem";
+import { config } from "../utils/config";
+import { FactoryABI } from "../utils/factoryABI.json";
+
+const eventSignature = keccak256(
+  toBytes("PairCreated(address,address,address,uint256)")
+);
+console.log("Event Signature: ", eventSignature);
 
 interface TokenInfo {
   tokenAddress: string;
   mintedBy: string;
   name: string;
   symbol: string;
+}
+
+interface Pair {
+  args: { token0: string; token1: string; pair: string; arg3: number };
+  eventName: string;
 }
 
 const Pools = () => {
@@ -34,8 +48,6 @@ const Pools = () => {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo[]>([]);
   const [amountToken1, setAmountToken1] = useState("");
   const [amountToken2, setAmountToken2] = useState("");
-  const [token1Decimals, setToken1Decimals] = useState(18);
-  const [token2Decimals, setToken2Decimals] = useState(18);
   const [removeLiquidityAmount, setRemoveLiquidityAmount] = useState("");
   const [selectedPool, setSelectedPool] = useState<{
     token1Address: string;
@@ -44,9 +56,15 @@ const Pools = () => {
   const token1AddressRef = useRef<string | null>(null);
   const token2AddressRef = useRef<string | null>(null);
   const [pair, setPair] = useState("");
+  const [events, setEvents] = useState<Pair[]>([]);
+
+  const [isCreatePoolHelpVisible, setIsCreatePoolHelpVisible] = useState(false);
+  const [isAddLiquidityHelpVisible, setIsAddLiquidityHelpVisible] =
+    useState(false);
 
   useEffect(() => {
     loadPools();
+    getEvents();
   }, []);
 
   useEffect(() => {
@@ -55,16 +73,42 @@ const Pools = () => {
     }
   }, [tokenInfo]);
 
-  useEffect(() => {
-    if (token1Address && token2Address) {
-      console.log("Address1: ", token1Address);
-      console.log("Address2: ", token2Address);
-    }
-  }, [token1Address, token2Address]);
-
   const loadPools = async () => {
     await getTokenInfo(setTokenInfo);
   };
+
+  async function getEvents() {
+    try {
+      const response = await fetch(
+        "https://opencampus-codex.blockscout.com/api/v2/addresses/0x550F5925cADF71086bdCE274ceA5779F67f57C42/logs"
+      );
+      const data = await response.json();
+      const decodedEvents: Pair[] = [];
+      for (let item of data.items) {
+        if (item.topics[0].toLowerCase() === eventSignature.toLowerCase()) {
+          const decodedEvent = decodeEventLog({
+            abi: FactoryABI,
+            data: item.data,
+            topics: item.topics.slice(0, 4),
+          });
+          console.log(decodedEvent);
+
+          decodedEvents.push({
+            args: {
+              token0: decodedEvent.args[0],
+              token1: decodedEvent.args[1],
+              pair: decodedEvent.args[2],
+              arg3: decodedEvent.args[3],
+            },
+            eventName: decodedEvent.eventName,
+          });
+        }
+      }
+      setEvents(decodedEvents);
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   const findPairs = async () => {
     const foundPools = [];
@@ -77,8 +121,6 @@ const Pools = () => {
           token2.tokenAddress,
           setPair
         );
-        console.log("Pair Address: ", pairAddress);
-        console.log("Pair :" + pair);
         if (
           String(pairAddress) !== "0x0000000000000000000000000000000000000000"
         ) {
@@ -87,13 +129,10 @@ const Pools = () => {
             token1Address: token1.tokenAddress,
             token2Address: token2.tokenAddress,
           });
-        } else {
-          console.log("Pair not found.");
         }
       }
     }
     setPools(foundPools);
-    console.log("Found Pools: ", foundPools);
   };
 
   const handleCreatePoolClick = () => {
@@ -126,14 +165,32 @@ const Pools = () => {
     }
   };
 
+  const handleToken1Select = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedToken = tokenInfo.find(
+      (token) => token.tokenAddress === e.target.value
+    );
+    if (selectedToken) {
+      setToken1Address(selectedToken.tokenAddress);
+      setToken1Symbol(selectedToken.symbol);
+    }
+  };
+
+  const handleToken2Select = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedToken = tokenInfo.find(
+      (token) => token.tokenAddress === e.target.value
+    );
+    if (selectedToken) {
+      setToken2Address(selectedToken.tokenAddress);
+      setToken2Symbol(selectedToken.symbol);
+    }
+  };
+
   const handleAddLiquidityClick = (pool: {
     token1Address: string;
     token2Address: string;
   }) => {
     token1AddressRef.current = pool.token1Address;
     token2AddressRef.current = pool.token2Address;
-    console.log("Ref Address1: ", token1AddressRef.current);
-    console.log("Ref Address2: ", token2AddressRef.current);
     setAddLiquidityOpen(true);
   };
 
@@ -144,7 +201,6 @@ const Pools = () => {
         return;
       }
 
-      // Adreslerin geçerli olup olmadığını kontrol edin.
       if (
         !ethers.utils.isAddress(token1AddressRef.current) ||
         !ethers.utils.isAddress(token2AddressRef.current)
@@ -152,10 +208,6 @@ const Pools = () => {
         console.error("One or both token addresses are invalid.");
         return;
       }
-
-      console.log("Adding Liquidity...");
-      console.log("Token1 Address:", token1AddressRef.current);
-      console.log("Token2 Address:", token2AddressRef.current);
 
       await addLiquidity(
         token1AddressRef.current,
@@ -171,23 +223,55 @@ const Pools = () => {
     }
   };
 
-  const handleRemoveLiquidityClick = (pool: {
+  const handleRemoveLiquidityClick = async (pool: {
     token1Address: string;
     token2Address: string;
+    index: number;
   }) => {
-    setToken1Address(pool.token1Address);
-    setToken2Address(pool.token2Address);
-    setRemoveLiquidityOpen(true);
+    console.log("Checking pool:", pool);
+    console.log("Events:", events);
+
+    const foundEvent = events.find(
+      (event) =>
+        (event.args.token0.toLowerCase() === pool.token1Address.toLowerCase() &&
+          event.args.token1.toLowerCase() ===
+            pool.token2Address.toLowerCase()) ||
+        (event.args.token0.toLowerCase() === pool.token2Address.toLowerCase() &&
+          event.args.token1.toLowerCase() === pool.token1Address.toLowerCase())
+    );
+    console.log("Found Event:", foundEvent);
+    if (foundEvent) {
+      const poolAddress = foundEvent.args.pair;
+      await Approve(poolAddress);
+      setToken1Address(pool.token1Address);
+      setToken2Address(pool.token2Address);
+      setRemoveLiquidityOpen(true);
+    } else {
+      console.error("Pool not found.");
+    }
   };
 
   const handleRemoveLiquidity = async () => {
     try {
-      await removeLiquidity(
-        token1Address,
-        token2Address,
-        Number(removeLiquidityAmount)
+      const foundEvent = events.find(
+        (event) =>
+          (event.args.token0.toLowerCase() === token1Address.toLowerCase() &&
+            event.args.token1.toLowerCase() === token2Address.toLowerCase()) ||
+          (event.args.token0.toLowerCase() === token2Address.toLowerCase() &&
+            event.args.token1.toLowerCase() === token1Address.toLowerCase())
       );
-      setRemoveLiquidityOpen(false);
+      console.log("Found Event:", foundEvent);
+      if (foundEvent) {
+        await removeLiquidity(
+          token1Address,
+          token2Address,
+          Number(removeLiquidityAmount),
+          String(foundEvent.args.pair)
+        );
+        setRemoveLiquidityOpen(false);
+      } else {
+        console.error("Pool address not found.");
+      }
     } catch (error) {
       console.error("Error removing liquidity:", error);
     }
@@ -204,17 +288,25 @@ const Pools = () => {
       <div className="flex flex-col items-center w-[1000px]">
         <div className="flex justify-between items-center w-full mb-4">
           <h1 className="text-2xl font-bold text-white">Pools</h1>
-          <motion.button
-            className="bg-cyan-900 opacity-80 text-white py-2 px-4 rounded-xl"
-            onClick={handleCreatePoolClick}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            Create Pool
-          </motion.button>
+          <div>
+            <motion.button
+              className="bg-blue-800 hover:bg-blue-950  opacity-80 text-white py-2 px-4 rounded-xl"
+              onClick={handleCreatePoolClick}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              Create Pool
+            </motion.button>
+            <button
+              onClick={() => setIsCreatePoolHelpVisible(true)}
+              className="ml-2 text-white opacity-60 text-lg"
+            >
+              ?
+            </button>
+          </div>
         </div>
 
-        <div className="bg-transparent border-white border-[0.05px] border-opacity-30 p-6 rounded-lg shadow-lg w-full">
+        <div className="bg-transparent border-white shadow-lg shadow-cyan-400 border-[0.05px] border-opacity-30 p-6 rounded-lg shadow-lg w-full">
           {pools.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 bg-transparent rounded-lg">
               <svg
@@ -235,7 +327,7 @@ const Pools = () => {
           ) : (
             <div className="bg-transparent rounded-lg p-6 max-h-[400px] overflow-y-auto custom-scrollbar">
               <h2 className="text-xl mb-4 text-white">
-                Your positions ({pools.length})
+                Positions ({pools.length})
               </h2>
               {pools.map((pool, index) => (
                 <div
@@ -249,7 +341,7 @@ const Pools = () => {
                   </div>
                   <div className="flex items-center">
                     <motion.button
-                      className="bg-cyan-900 opacity-80 text-white py-1 px-3 rounded-xl ml-4"
+                      className="bg-blue-800 hover:bg-blue-950 opacity-80 text-white py-1 px-3 rounded-xl ml-4"
                       onClick={() => handleAddLiquidityClick(pool)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -257,13 +349,19 @@ const Pools = () => {
                       Add Liquidity
                     </motion.button>
                     <motion.button
-                      className="bg-cyan-900 opacity-80 text-white py-1 px-3 rounded-xl ml-4"
-                      onClick={() => handleRemoveLiquidityClick(pool)}
+                      className="bg-blue-800 hover:bg-blue-950 opacity-80 text-white py-1 px-3 rounded-xl ml-4"
+                      onClick={() => handleRemoveLiquidityClick(pool, index)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
                       Remove Liquidity
                     </motion.button>
+                    <button
+                      onClick={() => setIsAddLiquidityHelpVisible(true)}
+                      className="ml-2 text-white opacity-60 text-lg"
+                    >
+                      ?
+                    </button>
                   </div>
                 </div>
               ))}
@@ -278,26 +376,34 @@ const Pools = () => {
             onClick={handleClosePopup}
           >
             <div
-              className="bg-gray-900 p-6 rounded-lg w-96"
+              className="bg-neutral-800 p-6 rounded-lg w-96"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold text-white mb-4">Create Pool</h2>
-              <input
-                type="text"
-                placeholder="Token 1 Address"
-                value={token1Address}
-                onChange={(e) => setToken1Address(e.target.value)}
+              <select
                 className="w-full p-3 mb-4 rounded bg-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                placeholder="Token 2 Address"
-                value={token2Address}
-                onChange={(e) => setToken2Address(e.target.value)}
+                onChange={handleToken1Select}
+              >
+                <option value="">Select Token 1</option>
+                {tokenInfo.map((token) => (
+                  <option key={token.tokenAddress} value={token.tokenAddress}>
+                    {token.name} ({token.symbol})
+                  </option>
+                ))}
+              </select>
+              <select
                 className="w-full p-3 mb-4 rounded bg-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+                onChange={handleToken2Select}
+              >
+                <option value="">Select Token 2</option>
+                {tokenInfo.map((token) => (
+                  <option key={token.tokenAddress} value={token.tokenAddress}>
+                    {token.name} ({token.symbol})
+                  </option>
+                ))}
+              </select>
               <motion.button
-                className="bg-cyan-900 opacity-80 text-white py-2 px-4 rounded-xl w-full"
+                className="bg-blue-800 hover:bg-blue-950 opacity-80 text-white py-2 px-4 rounded-xl w-full"
                 onClick={handleCreatePool}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -315,7 +421,7 @@ const Pools = () => {
             onClick={handleClosePopup}
           >
             <div
-              className="bg-gray-900 p-6 rounded-lg w-96"
+              className="bg-neutral-800 p-6 rounded-lg w-96"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold text-white mb-4">
@@ -336,7 +442,7 @@ const Pools = () => {
                 className="w-full p-3 mb-4 rounded bg-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <motion.button
-                className="bg-cyan-900 opacity-80 text-white py-2 px-4 rounded-xl w-full"
+                className="bg-blue-800 hover:bg-blue-950 opacity-80 text-white py-2 px-4 rounded-xl w-full"
                 onClick={handleAddLiquidity}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -352,7 +458,7 @@ const Pools = () => {
             onClick={handleClosePopup}
           >
             <div
-              className="bg-gray-900 p-6 rounded-lg w-96"
+              className="bg-neutral-800 p-6 rounded-lg w-96"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold text-white mb-4">
@@ -366,13 +472,51 @@ const Pools = () => {
                 className="w-full p-3 mb-4 rounded bg-neutral-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <motion.button
-                className="bg-cyan-900 opacity-80 text-white py-2 px-4 rounded-xl w-full"
+                className="bg-blue-800 hover:bg-blue-950 opacity-80 text-white py-2 px-4 rounded-xl w-full"
                 onClick={handleRemoveLiquidity}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
                 Remove Liquidity
               </motion.button>
+            </div>
+          </div>
+        )}
+        {/* Help Popups */}
+        {isCreatePoolHelpVisible && (
+          <div
+            className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50 "
+            id="popupOverlay"
+            onClick={() => setIsCreatePoolHelpVisible(false)}
+          >
+            <div className=" bg-blue-800 text-white p-4 rounded-lg z-50 text-xl">
+              <p>
+                To create a pool, select the two tokens you want to pair, then
+                click &apos;Create Pool. This will create a new liquidity pool
+                for the selected tokens.
+              </p>
+            </div>{" "}
+          </div>
+        )}
+
+        {isAddLiquidityHelpVisible && (
+          <div
+            className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50 "
+            id="popupOverlay"
+            onClick={() => setIsAddLiquidityHelpVisible(false)}
+          >
+            <div className=" bg-blue-800 space-y-4 text-white p-4 rounded-lg z-50 text-xl">
+              <p>
+                To add liquidity, select a pool and enter the amounts of each
+                token you wish to contribute. Then click &apos;Add
+                Liquidity&apos;.
+              </p>
+              <p>------------------------------------------------------------------------------------------------------------------------------</p>
+              <p>
+                To remove liquidity, select a pool and enter the amount of token
+                amount you wish to remove. Then click &apos;Remove
+                Liquidity&apos;.
+              </p>
             </div>
           </div>
         )}

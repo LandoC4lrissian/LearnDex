@@ -2,8 +2,9 @@ import { writeContract, readContract } from "@wagmi/core";
 import { V2Router02ABI } from "./V2RouterABI.json";
 import { WETHABI } from "./WETHABI.json";
 import { config } from "./config";
-import { parseUnits, formatUnits } from "viem";
+import { parseUnits, formatUnits, parseEther } from "viem";
 import { getAccount } from "@wagmi/core";
+
 
 const deadline = Number(Math.floor(new Date().getTime() / 1000.0) + "0");
 
@@ -88,7 +89,8 @@ export async function addLiquidity(
 export async function removeLiquidity(
   token1Address: string,
   token2Address: string,
-  amountRemoveLiquidity: number
+  amountRemoveLiquidity: number,
+  poolAddress: string
 ) {
   const account = getAccount(config);
   if (!account || !account.address) {
@@ -104,10 +106,10 @@ export async function removeLiquidity(
       args: [
         token1Address,
         token2Address,
-        amountRemoveLiquidity,
+        parseEther(String(amountRemoveLiquidity)),
         0,
         0,
-        accountAddress,
+        poolAddress,
         deadline,
       ],
     });
